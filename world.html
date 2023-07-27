@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EARTH</title>
+</head>
+
+<body onresize="document.canvasFunction.resizing()">
+    <header id="hdr"></header>
+    <script src="/js/headerWriter.js"></script>
+    <style>
+        #main {
+            width: 100%;
+        }
+        .textureCanvas{
+            background-color: rgb(215, 215, 215);
+            width: 100%;
+        }
+        .rightHolder{
+            width:41%;
+            margin-right: 6%;
+            height:100%;
+            float:right;
+        }
+        .leftHolder{
+            width:41%;
+            margin-left: 6%;
+            /* height: 100px; */
+            float:left;
+            margin-top:45px;
+            background-color: rgb(182, 182, 182);
+            border-radius: 10px;
+            /* border-top: rgb(84, 84, 84) 10px solid; */
+            /* padding-bottom: 30px; */
+            margin-bottom: 20px;
+        }
+        .mapHolder{
+            margin-top: 10px;
+            width:100%;
+            height: 100px;
+            background-color: rgb(122, 122, 122);
+            position: relative;
+        }
+        .viewerPic{
+            /* position: relative; */
+            float: left;
+            width: 50%;
+        }
+        .mapHolderData{
+            font-size: 18px;
+            width: 100%;
+            text-align: center;
+        }
+        .rbo-title{
+            margin-top: 5px;
+            font-size: 20px;
+            text-align: center;
+        }
+        .rbo-cl{
+            padding: 5.5px;
+        }
+        .rbo-evclItem{
+            border-bottom: 1px solid;
+            padding: 4px;
+            font-size: 16px;
+            height: 22px;
+        }
+        .rbo-evclTitle{
+            float: left;
+            
+        }
+        .rbo-evclCt{
+            float: right;
+        }
+        .rbo-evclCtB{
+            float: right;
+            width: 20px;
+            height: 18px;
+            margin: 0;
+            border: none;
+            padding: 0;
+            text-align: center;
+            user-select:none;
+        }
+        .rbo-evclCtBCb{
+            background-color: #3397e8;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .rbo-evclTx{
+            margin-top: -2.5px;
+            font-weight: 500;
+        }
+        .mapButtons{
+            
+            width: 100%;
+            float:left;
+            position:relative;
+            pointer-events: none;
+        }
+        .dirbut{
+            color:white;
+            font-size: 20px;
+            opacity: 0.5;
+            cursor: pointer;
+            position: absolute;
+            pointer-events:all
+        }
+        .generationButton{
+            width: 50%;
+            font-size: 20px;
+            background-color: #3397e8;
+            float: left;
+            border: none;
+            height: 40px;
+            transition: 0.5s;
+            cursor: pointer;
+        }
+        .generationButton:hover{
+            transition: 0.5s;
+            background-color: #207cc8;
+        }
+        #promptDownload{
+            width:80%;
+            margin-top: 100px;
+            margin-left: 10%;
+            background-color: #e3e3e3;
+            position: absolute;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        .fb{
+            margin-top: 60px;
+        }
+
+        /* body{
+            overflow: hidden;
+        } */
+    </style>
+    <!-- <canvas id="main"></canvas> -->
+    <!-- <script src="./canvasresize.js"></script> -->
+    
+    <div id="yo"></div>
+    <div id="tempdiv"></div>
+    
+    <div class="leftHolder">
+        <div style="width:100%;color:rgb(20, 20, 20);margin-top: 15px;font-size: 22px;text-align: center;">数据选择下载</div>
+        <div class="mapHolder">
+            
+        </div>
+        <div class="mapButtons">
+            <div id="lw"onclick="document.canvasFunction.move(-0.5,0)"style="margin-top: 50%;transform:translate(0,-50%);"class="dirbut">◀️</div>
+            <div id="rw"onclick="document.canvasFunction.move(0.5,0)"style="margin-top: 50%;margin-left:100%;transform: translate(-100%,-50%);"class="dirbut">▶️</div>
+            <div id="uw"onclick="document.canvasFunction.move(0,-0.5)"style="margin-left:50%;transform:translate(-50%,0);"class="dirbut">🔼</div>
+            <div id="dw"onclick="document.canvasFunction.move(0,0.5)"style="margin-left:50%;margin-top:100%;transform:translate(-50%,-100%);"class="dirbut">🔽</div>
+        </div>
+        <span style="float:right;cursor:pointer;color:black"onclick="document.canvasFunction.back()">返回上级↪️</span>
+        <div id="warning"style="color:red;font-size: 15px;width: 100%;">*点击图片左上/右上/左下/右下四个象限进入更小比例的地图;放大后点击四个箭头进行平移;</div>
+        <div class="mapHolderData"id="zoom">[缩放倍数:0]</div>
+        <div class="mapHolderData"id="pos">[相对坐标:(0,0)]</div>
+        <div class="mapHolderData"id="alength">[边长:114514km]</div>
+        <div class="dataInput">
+            <div class="rbo-evclItem">
+                <div class="rbo-evclTitle">模型分辨率<span id="modelResEstimate">(约32MB)</span></div>
+                <div class="rbo-evclCt">
+                    <div class="rbo-evclCtB rbo-evclCtBCb"onclick="document.canvasFunction.adjustRes('m',1)"><div class="rbo-evclTx">+</div></div>
+                    <input class="rbo-evclCtB" id="ev-modelRes" disabled style="background-color: white;width:40px;text-align: center;"></input>
+                    <div class="rbo-evclCtB rbo-evclCtBCb"onclick="document.canvasFunction.adjustRes('m',-1)"><div class="rbo-evclTx">-</div></div>
+                </div>
+            </div>
+            <div class="rbo-evclItem">
+                <div class="rbo-evclTitle">贴图分辨率<span id="imgResEstimate">(约32MB)</span></div>
+                <div class="rbo-evclCt">
+                    <div class="rbo-evclCtB rbo-evclCtBCb"onclick="document.canvasFunction.adjustRes('t',1)"><div class="rbo-evclTx">+</div></div>
+                    <input class="rbo-evclCtB" id="ev-imgRes" disabled style="background-color: white;width:40px;text-align: center;"></input>
+                    <div class="rbo-evclCtB rbo-evclCtBCb"onclick="document.canvasFunction.adjustRes('t',-1)"><div class="rbo-evclTx">-</div></div>
+                </div>
+            </div>
+            <div class="rbo-evclItem">
+                <div class="rbo-evclTitle">卫星地图源<span id="originDesc">(速度快)</span></div>
+                <div class="rbo-evclCt">
+                    <div class="rbo-evclCtB rbo-evclCtBCb"onclick="document.canvasFunction.changeOrigin()"><div class="rbo-evclTx">↔</div></div>
+                    <input class="rbo-evclCtB" id="ev-origin" disabled style="background-color: white;width:60px;text-align: center;"></input>
+                </div>
+            </div>
+            <div class="rbo-evclItem">
+                <div class="rbo-evclTitle" title="运算的时候会给模型每一个点的高度乘上该值，若想体现出地形起伏可以把这个值调大">高度拉伸值<span id="heightDesc">(1为不变)</span></div>
+                <div class="rbo-evclCt">
+                    <input class="rbo-evclCtB" id="ev-height" style="background-color: white;width:80px;text-align: center;"placeholder="请输入"></input>
+                </div>
+            </div>
+            <div class="rbo-evclItem"style="border:none">
+                <div class="rbo-evclTitle" title="运算的时候会给模型每一个点的高度乘上该值，若想体现出地形起伏可以把这个值调大">文件名</div>
+                <div class="rbo-evclCt">
+                    <input class="rbo-evclCtB" id="ev-fileName" style="background-color: white;width:160px;text-align: center;"placeholder="请输入"></input>
+                </div>
+            </div>
+            <button class="generationButton" id="button-model"onclick="document.canvasFunction.generate('model')"style="border-bottom-left-radius:10px;">生成模型</button>
+            <button class="generationButton" id="button-img"onclick="document.canvasFunction.generate('img')"style="border-bottom-right-radius:10px;border-left:0.5px solid #444444">生成贴图</button>
+            <div id="modelGenerationProgress"style="width:50%;float:left;pointer-events:none;height:2px;margin-top:-40px;">
+            <div id="progresser"style="transition:0.5s;width:0%;background-color:green;height:100%"></div>
+            </div>
+            <!-- 设置按钮颜色时候下面的代码也要改 -->
+        </div>
+    </div>
+    <div class="rightHolder">
+        <div style="width:100%;color:white;margin-top: 20px;font-size: 20px;text-align: center;">贴图输出(点击图片下载)</div>
+        <canvas style="cursor:pointer"class="textureCanvas"onclick="document.saveTextureData()"></canvas>
+    </div>
+    <div id="promptDownload">
+        <div style="width:100%;height:30px;text-align: center;padding-top:5px;font-size: 20px;"id="previewTitle">地图模型下载</div>
+        <div style="width:100%;height:20px;text-align: center;padding-top:5px;font-size: 18px;"id="size">大小：</div>
+        <!-- <canvas width="2048" height="2048" style="width:100%;"id="finalRender"></canvas> -->
+        <button id="ccd"onclick="document.canvasFunction.cancelDownload()"class="generationButton fb"style="background-color:#888888;border-bottom-left-radius:10px;">返回</button>
+        <button id="cfd"onclick="document.canvasFunction.confirmDownload()"class="generationButton fb"style="border-bottom-right-radius:10px;border-left:0.5px solid #444444">确认下载</button>
+    </div>
+    
+    <script type="module">
+        function satMap(t,zoom,x,y){
+            if(t=="ArcGIS")
+            return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`
+            else return `https://api.mapbox.com/v4/mapbox.satellite/${zoom}/${x}/${y}.webp?sku=101ryq85xzhEg&access_token=pk.eyJ1IjoiY3licml3c2t5IiwiYSI6ImNsNnkxaGQxYjAweWozaW5xaXRpdjZzZGwifQ.IKEXnPBzxaudRLZmwM-v2w`
+        }   
+        /*
+        失误列表：
+        1.(i,j)写成(i,i)
+        2.document.data被覆盖，导致四个区块生成结果都是同一个
+        3.矩阵x、y边长度混用
+        4.判断等号写成计算等号
+        5.传入数据x、y写反
+        */
+        document.imgData={};
+        const worldSize = 40075035;
+        const chunkSize = 256;
+        const Estimate={
+            resolution:{
+                256:"8MB",
+                512:"32MB",
+                1024:"128MB"
+            },
+            imgResolution:{
+                256:"130KB",
+                512:"520KB",
+                1024:"2.1MB",
+                2048:"8MB",
+                4096:"32MB",
+                8192:"128MB(极慢!)"
+            }
+        }
+
+        document.querySelector("#ev-modelRes").value=256;
+
+       document.viewerPositionData={
+            zoom:0,
+            x:0,
+            y:0
+       }
+       document.downloadSettings={
+            imgResolution:512,
+            resolution:512,
+            heightMultiplier:1,
+            origin:"MapBox",
+            fileName:"未命名地图"
+       }
+       var canvasFunction={};
+        function resizing(){
+            var cvs=document.querySelector(".textureCanvas");
+            var width=getComputedStyle(cvs).width;
+            cvs.style.height=width;
+            this.cvs=cvs;
+
+            var mph=document.querySelector(".mapHolder");
+            
+            mph.style.height=getComputedStyle(mph).width;
+            var mbs=document.querySelector(".mapButtons");
+            mbs.style.height=mph.style.height;
+            mbs.style.marginTop="-"+mph.style.height;
+        }
+        document.canvasFunction=canvasFunction;
+        document.querySelector("#ev-height").value=1;
+        document.querySelector("#ev-height").addEventListener('change', (event) => {
+            document.downloadSettings.heightMultiplier=event.target.value;
+        });
+        document.querySelector("#ev-fileName").addEventListener('change', (event) => {
+            document.downloadSettings.fileName=event.target.value.replace(/\\\//g,"");
+        });
+
+        canvasFunction.resizing=resizing;
+        canvasFunction.back=function(){
+            if(document.viewerPositionData.zoom==0){
+                alert("这已经是最大比例尺了!");
+                return;
+            }
+            this.viewerEnter(document.viewerPositionData.zoom-1,Math.floor(document.viewerPositionData.x/2),Math.floor(document.viewerPositionData.y/2))
+        }
+        canvasFunction.checkOutRange=function(nx,ny){
+            var maxChunks=Math.pow(2,document.viewerPositionData.zoom)
+            // console.log(maxChunks);
+            if(nx<0||ny<0||nx>maxChunks-1||ny>maxChunks-1){
+                return true;
+                
+            }else return false;
+        }
+        canvasFunction.move=function(dx,dy){
+            var nx=document.viewerPositionData.x+dx;
+            var ny=document.viewerPositionData.y+dy;
+            
+            if(this.checkOutRange(nx,ny)){
+                console.log(nx,ny)
+                alert("发生错误:超出界限")
+                return;
+            }
+            else{
+                document.viewerPositionData.x=nx;
+                document.viewerPositionData.y=ny;
+                this.viewerEnter(document.viewerPositionData.zoom,document.viewerPositionData.x,document.viewerPositionData.y)
+            }
+        }
+        canvasFunction.adjustRes=function(type,delta){
+            if(type=='m'){
+                if((document.downloadSettings.resolution==256&&delta==-1)||(document.downloadSettings.resolution==1024&delta==1)){
+                    return;
+                }
+                else document.downloadSettings.resolution=Math.pow(2,Math.log2(document.downloadSettings.resolution)+delta);
+            }else{
+                if((document.downloadSettings.imgResolution==256&&delta==-1)||(document.downloadSettings.imgResolution==8192&&delta==1)){
+                    return;
+                }
+                else document.downloadSettings.imgResolution=Math.pow(2,Math.log2(document.downloadSettings.imgResolution)+delta);
+            }
+            this.refreshViewerData()
+        }
+        canvasFunction.changeOrigin=function(){
+            if(document.downloadSettings.origin=="MapBox"){
+                document.downloadSettings.origin="ArcGIS";
+            }else{
+                document.downloadSettings.origin="MapBox";
+            }
+            this.viewerEnter(document.viewerPositionData.zoom,document.viewerPositionData.x,document.viewerPositionData.y);
+            this.refreshViewerData()
+        }
+        canvasFunction.finalRender=function(){
+            var pen=document.querySelector("#finalRender").getContext('2d');
+            document.querySelector("#finalRender").width=document.downloadSettings.resolution+200;
+            document.querySelector("#finalRender").height=document.downloadSettings.resolution+200;
+            const a=document.querySelector("#finalRender").width;
+            pen.fillStyle="#000522";
+            pen.fillRect(0,0,a,a);
+            if(!document.terrainData||!document.imgData||document.imgData.length==0){
+                alert("");
+                return;
+            }
+            // for(let index in document.terrainData){
+            //     var info=index.split("_");
+            //     var baseX=info[3]*chunkSize;
+            //     var baseY=info[4]*chunkSize;
+            //     for(let i=0;i<chunkSize;i++){
+            //         for(let j=0;j<chunkSize;j++){
+            //             var color=document.imgData[index]?document.imgData[index][i][j]:[200,200,200];
+            //             var height=document.terrainData[index][i][j];
+            //             const mar=200;
+            //             const marTop=400;
+            //             var unit=(a-mar*2)/document.downloadSettings.resolution;
+            //             var unitY=(a-marTop*2)/document.downloadSettings.resolution;
+            //             pen.strokeStyle="#00aeff"
+            //             pen.moveTo(mar+unit*(i+baseX),marTop+unitY*(j+baseY));
+            //             var unitMeter = Math.round(worldSize / Math.pow(2, readyStatus.chunkZoom)/chunkSize)
+            //             var heightK=document.downloadSettings.heightMultiplier/unitMeter;
+            //             pen.lineTo(mar+unit*(i+baseX),marTop+unitY*(j+baseY)+10);
+            //             pen.stroke()
+            //         }
+            //     }
+            // }
+        }
+        
+        canvasFunction.loadLoadingPic=function(size){
+            var pen=this.cvs.getContext('2d');
+            this.cvs.width=size;
+            this.cvs.height=size;
+            pen.strokeStyle="#666666"
+            pen.lineWidth=Math.ceil(size/256);
+            for(let i=1;i<16;i++){
+                pen.moveTo(0,i*size/16);
+                pen.lineTo(size,i*size/16);
+                pen.stroke();
+            }
+            for(let i=1;i<=16;i++){
+                pen.moveTo(i*size/16,0);
+                pen.lineTo(i*size/16,size);
+                pen.stroke();
+            }
+            var fs=Math.round(size)/10
+            pen.font = fs+"px serif";
+            pen.fillText("无贴图数据",size/2-fs*2.5,size/2+fs/2)
+        }
+        canvasFunction.generate=function(type){
+            document.querySelector("#warning").innerHTML="*生成期间请勿更改数据!<br>*若要使贴图和模型能自动搭配请勿更改文件名"
+            if(readyStatus.generationInProgress[type])return;
+            this.refreshViewerData()
+            getData(document.viewerPositionData.zoom,document.viewerPositionData.x,document.viewerPositionData.y,document.downloadSettings.resolution,document.downloadSettings.imgResolution,type)
+        },
+        canvasFunction.promptDownload=function(name,data){
+            document.querySelector("#promptDownload").style.display="inherit";
+            document.querySelector("#previewTitle").innerText="地图模型下载:"+name;
+            document.querySelector("#size").innerText=`文件大小：
+            ${data.obj[0]}：${Math.round(data.obj[1].length/1000000)}MB
+            ${data.mtl[0]}：${Math.round(data.mtl[1].length)}B
+            `;
+            document.confirmingHeightData=data;
+            // this.finalRender();
+        }
+        canvasFunction.confirmDownload=function(){
+            var data=document.confirmingHeightData;
+            document.querySelector("#promptDownload").style.display="none";
+            if(!data.obj[0]||!data.mtl[0]){
+                alert("发生故障，下载暂停，请报告作者");
+                return;
+            }
+            download(data.obj[0],data.obj[1])
+            download(data.mtl[0],data.mtl[1])
+        }
+        canvasFunction.cancelDownload=function(){
+            document.querySelector("#promptDownload").style.display="none";
+        }
+        canvasFunction.refreshViewerData=function(){
+            
+            var s=Math.round(worldSize/Math.pow(2,document.viewerPositionData.zoom)/1000);
+            if(document.viewerPositionData.zoom>8)s=Math.round(worldSize/Math.pow(2,document.viewerPositionData.zoom)/100)/10;
+            document.querySelector("#zoom").innerHTML="[缩放倍数:"+document.viewerPositionData.zoom+"]"
+            document.querySelector("#pos").innerHTML=`[相对坐标:(${document.viewerPositionData.x},${document.viewerPositionData.y})]`
+            document.querySelector("#alength").innerHTML=`[边长:${s}km]`
+
+
+            document.querySelector("#ev-modelRes").value=document.downloadSettings.resolution;
+            document.querySelector("#ev-imgRes").value=document.downloadSettings.imgResolution;
+            document.querySelector("#ev-origin").value=document.downloadSettings.origin;
+
+            document.querySelector("#modelResEstimate").innerHTML=`(约${Estimate.resolution[document.downloadSettings.resolution]})`;
+            document.querySelector("#imgResEstimate").innerHTML=`(约${Estimate.imgResolution[document.downloadSettings.imgResolution]})`;
+            document.querySelector("#originDesc").innerHTML=document.downloadSettings.origin=="MapBox"?`(速度快)`:`(质量高)`;
+
+
+            document.querySelector("#lw").style.display=(this.checkOutRange(document.viewerPositionData.x-0.5,document.viewerPositionData.y))?"none":""
+            document.querySelector("#rw").style.display=(this.checkOutRange(document.viewerPositionData.x+0.5,document.viewerPositionData.y))?"none":""
+            document.querySelector("#uw").style.display=(this.checkOutRange(document.viewerPositionData.x,document.viewerPositionData.y-0.5))?"none":""
+            document.querySelector("#dw").style.display=(this.checkOutRange(document.viewerPositionData.x,document.viewerPositionData.y+0.5))?"none":""
+        }
+        canvasFunction.viewerEnter=function(zoom,x,y){
+            if(zoom>14)return;
+            document.viewerPositionData.x=x;
+            document.viewerPositionData.y=y;
+            document.viewerPositionData.zoom=zoom;
+            var d=`<img onclick="document.canvasFunction.viewerEnter(${zoom+1},${x*2},${y*2})"style="transform:translate(0,0)"class="viewerPic"src="${satMap(document.downloadSettings.origin,zoom+1,x*2,y*2)}" alt="">
+            <img onclick="document.canvasFunction.viewerEnter(${zoom+1},${x*2+1},${y*2})"style="transform:translate(0%,0)"class="viewerPic"src="${satMap(document.downloadSettings.origin,zoom+1,x*2+1,y*2)}" alt="">
+            <img onclick="document.canvasFunction.viewerEnter(${zoom+1},${x*2},${y*2+1})"style="transform:translate(0,0%)"class="viewerPic"src="${satMap(document.downloadSettings.origin,zoom+1,x*2,y*2+1)}" alt="">
+            <img onclick="document.canvasFunction.viewerEnter(${zoom+1},${x*2+1},${y*2+1})"style="transform:translate(0%,0%)"class="viewerPic"src="${satMap(document.downloadSettings.origin,zoom+1,x*2+1,y*2+1)}" alt="">`
+            document.querySelector(".mapHolder").innerHTML=d;
+            canvasFunction.refreshViewerData()
+        }
+        canvasFunction.refreshViewerData()
+        canvasFunction.viewerEnter(0,0,0)
+        canvasFunction.resizing()
+        canvasFunction.loadLoadingPic(512)
+        const RI={
+            list:{},
+            zoom:-1,
+            x:-1,
+            y:-1,
+            resolution:-1,
+            imglist:{},
+            generationInProgress:{img:false,model:false,setd:function(type,d){
+                // console.log(type)
+                this[type]=d;
+                if(d)
+                document.querySelector("#button-"+type).style.backgroundColor="#aaaaaa"
+                else
+                document.querySelector("#button-"+type).style.backgroundColor="#3397e8"//颜色要改
+            }},
+            canvas:document.querySelector(".textureCanvas"),
+            addData:function(idx,data){
+                if(this.list[idx]!=false)console.log(idx)
+                this.list[idx]=data;
+                this.onchange(idx,data);
+            },
+            onchange:function(idx,data){
+                var allDone=true;
+                for(let i in this.list){
+                    if(this.list[i]==false){
+                        allDone=false;
+                        break;
+                    }
+                }
+                if(allDone){
+                    var dttt="";
+                    for(let i in document.terrainData){
+                        var d=i.split("_")
+                        dttt+=exportObj(d[0], d[1],d[3],d[4],d[2],document.terrainData[i]);
+                    }
+                    // console.log(this.list)
+                    canvasFunction.promptDownload(document.downloadSettings.fileName,{
+                            obj:[`${document.downloadSettings.fileName}_分辨率${Math.round(worldSize / Math.pow(2, this.zoom)/this.resolution)}m.obj`,dttt],
+                            mtl:[`${document.downloadSettings.fileName}_材质信息.mtl`,`newmtl terrainMaterial
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd ./${document.downloadSettings.fileName}_贴图.png
+`]
+                        })
+
+                    document.lastCount.vertex=0;
+                    readyStatus.generationInProgress.setd("model",false);
+                    document.querySelector("#progresser").style.width="0%";
+                    if(readyStatus.imgDownloadDone)readyStatus=RI;
+                }
+            }
+        };
+
+        function loadImageData(zoom, x, y,dx,dy) {
+            
+            var temp = readyStatus.canvas;
+            readyStatus.canvas=temp;
+            // temp=document.querySelector("#main")
+            // temp.width = temp.height = readyStatus.imgResolution;
+            var ctx = temp.getContext('2d');
+            var image = new Image();
+            image.src = satMap(document.downloadSettings.origin,zoom,x,y);
+            // console.log("x:"+x+",y:"+y)
+            // image.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}/`;
+            image.crossOrigin = ''
+
+            image.onload = function () {
+
+                ctx.drawImage(image, chunkSize*dx, chunkSize*dy);
+                var data = ctx.getImageData(0, 0, chunkSize, chunkSize).data;
+                var done=true;
+                for(let i in readyStatus.imglist){
+                    if(readyStatus.imglist==false){
+                        done=false;
+                        break;
+                    }
+                }
+                if(done){
+                    readyStatus.generationInProgress.setd("img",false);
+                }
+                
+                for (let i = 0; i < chunkSize; i++) {
+                    for (let j = 0; j < chunkSize; j++) {
+                        var idx = (chunkSize * j + i) * 4
+                        document.imgData[i+dx*chunkSize][j+dy*chunkSize][0] = data[idx];
+                        document.imgData[i+dx*chunkSize][j+dy*chunkSize][1] = data[idx + 1];
+                        document.imgData[i+dx*chunkSize][j+dy*chunkSize][2] = data[idx + 2];
+                    }
+                }
+                
+                // console.log(document.terrainData)
+
+                // a.click();
+                
+            }
+        }
+        function saveTextureData(){
+            var temp = readyStatus.canvas;
+            var a = document.createElement("a");
+            a.href = temp.toDataURL("image/png");
+            a.download = `${document.downloadSettings.fileName}_贴图.png`;
+            document.querySelector("#warning").innerHTML="*请将贴图、mtl、obj置于同一目录下，打开obj文件即可访问模型"
+            a.click();
+        }
+        document.saveTextureData=saveTextureData;
+        function loadHeightData(zoom, x, y,dx,dy) {
+            
+            var temp = document.createElement("canvas");
+            // temp=document.querySelector("#main")
+            temp.width = temp.height = chunkSize;
+            var ctx = temp.getContext('2d');
+            var image = new Image();
+            image.src = `https://tile.nextzen.org/tilezen/terrain/v1/${chunkSize}/terrarium/${zoom}/${x}/${y}.png?api_key=qA1ZmmF8Qc2muxHAYt5LIg`;
+            image.crossOrigin = ''
+
+            image.onload = function () {
+                ctx.drawImage(image, 0, 0);
+                var data = ctx.getImageData(0, 0, chunkSize, chunkSize).data;
+                var terrainData = [];
+                for (let i = 0; i < chunkSize; i++) {
+                    terrainData[i] = [];
+                    for (let j = 0; j < chunkSize; j++) {
+                        var idx = (chunkSize * j + i) * 4
+                        terrainData[i][j] = [(data[idx] * 256 + data[idx + 1] + data[idx + 2] / 256) - 32768]
+                    }
+                };
+                readyStatus.finishedChunk++;
+                document.querySelector("#progresser").style.width=(readyStatus.finishedChunk/readyStatus.totalChunk)*100+"%";
+                //分析数据并除杂
+                // for (let i = 0; i < chunkSize; i++) {
+                //     for (let j = 0; j < chunkSize; j++) {
+                //         var nearHeight=[];
+                //         if(terrainData[i+1]&&terrainData[i+1][j])nearHeight.push(terrainData[i+1][j]);
+                //         if(terrainData[i-1]&&terrainData[i-1][j])nearHeight.push(terrainData[i-1][j]);
+                //         if(terrainData[i][j+1])nearHeight.push(terrainData[i][j+1]);
+                //         if(terrainData[i][j-1])nearHeight.push(terrainData[i][j-1]);
+                //         var delta=0;
+                //         for(let k=0;k<nearHeight.length;k++){
+                //             delta+=terrainData[i][j]-nearHeight[k];
+                //         }
+                //         if(delta>150){
+                //             var avg=0;
+                //             for(let k=0;k<nearHeight.length;k++){
+                //                 avg+=nearHeight[k];
+                //             }
+                //             avg/=nearHeight.length;
+                //             terrainData[i][j]=avg;
+                //         }
+                //     }
+                // };
+
+                document.terrainData[`${x}_${y}_${zoom}_${dx}_${dy}`] = terrainData;
+                readyStatus.addData(`${x}_${y}_${zoom}`,true);
+                // loadImageData(zoom, x, y,dx,dy)
+            }
+        }
+        // function loadHeightDataComplete(zoom, x, y,res) {
+        //     var chunkSize=res;
+        //     var temp = document.createElement("canvas");
+        //     // temp=document.querySelector("#main")
+        //     temp.width = temp.height = chunkSize;
+        //     var ctx = temp.getContext('2d');
+        //     var image = new Image();
+        //     image.src = `https://tile.nextzen.org/tilezen/terrain/v1/${chunkSize}/terrarium/${zoom}/${x}/${y}.png?api_key=qA1ZmmF8Qc2muxHAYt5LIg`;
+        //     image.crossOrigin = ''
+        //     console.log("ld")
+
+        //     image.onload = function () {
+        //         ctx.drawImage(image, 0, 0);
+        //         var data = ctx.getImageData(0, 0, chunkSize, chunkSize).data;
+        //         var terrainData = [];
+        //         for (let i = 0; i < chunkSize; i++) {
+        //             terrainData[i] = [];
+        //             for (let j = 0; j < chunkSize; j++) {
+        //                 var idx = (chunkSize * j + i) * 4
+        //                 terrainData[i][j] = [(data[idx] * 256 + data[idx + 1] + data[idx + 2] / 256) - 32768, 0, 0, 0]
+        //             }
+        //         }
+        //         document.terrainData = terrainData;
+        //         loadImageData(zoom, x, y,dx,dy)
+        //     }
+        // }
+        document.lastCount={
+            vertex:0,
+        }
+        function exportObj(x, y,dx,dy, zoom,terrainData) {
+            var heightMultiplier=document.downloadSettings.heightMultiplier;
+            if(!x==429||!y==208)return ""
+            console.log("exporting:"+x+","+y)
+            var unitLength=256;
+            var unitMeter = -1;
+            
+            var thiscountV=0;
+            var faces = ``, vertexes = ``, vts = ``;
+            var d = terrainData;
+            //通过调取临近地图数据完成块与块之间的连接
+            var xxxxx=`${x*1+1}_${y}_${zoom}_${dx*1+1}_${dy}`;
+            var data=document.terrainData[xxxxx]//右侧(+x)领近
+            if(data){
+                d[unitLength]=[];
+                for(let i=0;i<unitLength;i++){
+                    d[unitLength][i]=data[0][i];
+                }
+            }
+            data=document.terrainData[`${x}_${y*1+1}_${zoom}_${dx}_${dy*1+1}`]//下侧(+y)领近
+            if(data){
+                for(let i=0;i<unitLength;i++){
+                    d[i][unitLength]=data[i][0];
+                }
+            }
+            data=document.terrainData[`${x*1+1}_${y*1+1}_${zoom}_${dx*1+1}_${dy*1+1}`]//右下侧(+xy)领近
+            if(data){
+                d[unitLength][unitLength]=data[0][0];
+            }
+
+
+
+            //开始装配 只支持矩形！！中间不能空数据
+            
+            for (let i = 0; i < d.length; i++) {
+                for (let j = 0; j < d[i].length; j++) {
+                    var h = d[i][j][0];
+                    unitMeter = Math.round(worldSize / Math.pow(2, zoom)/chunkSize)
+                    vertexes += `v ${Math.round((i+unitLength*dx) * unitMeter * 100) / 100000} ${Math.round(h * heightMultiplier * 100) / 100000} ${Math.round((j+unitLength*dy) * unitMeter * 100) / 100000}
+vt ${Math.round((i+unitLength*dx)/readyStatus.resolution *100000) / 100000} ${Math.round((1-(j+unitLength*dy) /readyStatus.resolution) * 100000) / 100000}
+`                   
+                document.lastCount.vertex++;
+                thiscountV++;
+
+                }
+
+            }
+            var d2=document.lastCount.vertex-thiscountV;
+            //v1  v2
+            //v3  v4
+            for (let i = 0; i < d.length-1 ; i++) {
+                for (let j = 0; j < d[i].length-1 ; j++) {
+                    
+                    var v1 = i * d[0].length + j + 1+d2;
+                    var v2 = (i + 1) * (d[0].length) + j + 1+d2;
+                    var v3 = i * d[0].length + j + 2+d2;
+                    var v4 = (i + 1) * (d[0].length) + j + 2+d2 ;
+                    
+                    
+                    faces += `f ${v4}/${v4} ${v1}/${v1} ${v3}/${v3}
+f ${v1}/${v1} ${v4}/${v4} ${v2}/${v2}
+`
+                }
+
+            }
+
+
+
+
+
+            var output = `
+#尹子-Mist 地形提取器
+mtllib ${document.downloadSettings.fileName}_材质信息.mtl
+
+
+o map_mesh_${x}_${y}z${zoom}
+usemtl terrainMaterial
+${vertexes}
+
+
+${faces}
+        `
+            return output;
+        }
+        function fake_click(obj) {
+            var ev = document.createEvent("MouseEvents");
+            ev.initMouseEvent(
+                "click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null
+            );
+            obj.dispatchEvent(ev);
+        }
+        function download(name, data) {
+            var urlObject = window.URL || window.webkitURL || window;
+
+            var downloadData = new Blob([data]);
+
+            var save_link = document.createElementNS("http://www.w3.org/1999/xhtml", "a")
+            save_link.href = urlObject.createObjectURL(downloadData);
+            save_link.download = name;
+            fake_click(save_link);
+        }
+        var readyStatus=RI;
+        function getData(zoom,x,y,resolution,imgResolution,getType){
+            var heightMultiplier=document.downloadSettings.heightMultiplier;
+            if(x%1==0.5||y%1==0.5){
+                if(resolution==256||imgResolution==256)alert("由于显示区域跨过了两个单位的图片,下载内容分辨率已从256改为512以使得数据可以下载");
+                resolution=Math.max(resolution,512);
+                imgResolution=Math.max(imgResolution,512);
+                
+            }
+            var basicZoom=zoom;//总模型的缩放大小
+            if(basicZoom+Math.log2(resolution/chunkSize)<15){
+                // heightMultiplier=prompt("高度缩放系数？(生成模型时会在高度方向乘上这个值)");
+                if (heightMultiplier == undefined ||heightMultiplier==''|| isNaN(heightMultiplier / 1)) {
+                    alert("高度拉伸值参数有误，生成终止")
+                    return;
+                }
+                
+                readyStatus.x=x;
+                readyStatus.y=y;
+                readyStatus.zoom=zoom;
+                readyStatus.resolution=resolution;
+                readyStatus.imgResolution=imgResolution;
+                
+                
+                if(getType=="model"){
+                    document.confirmingHeightData="";
+                    document.terrainData={};
+                    
+                var chunkCount=resolution/chunkSize;
+                var chunkZoom=basicZoom+Math.log2(chunkCount);//下载图的块的缩放大小
+                readyStatus.chunkZoom=chunkZoom;
+                readyStatus.list={};
+                readyStatus.totalChunk=chunkCount*chunkCount;
+                readyStatus.finishedChunk=0;
+                readyStatus.generationInProgress.setd("model",true);
+                for(let i=0;i<chunkCount;i++){
+                    for(let j=0;j<chunkCount;j++){
+                        readyStatus.list[`${x*chunkCount+i}_${y*chunkCount+j}_${chunkZoom}`]=false;
+                        loadHeightData(chunkZoom,x*chunkCount+i,y*chunkCount+j,i,j)
+                    }
+                }
+
+                }else{
+                var chunkCountImg=imgResolution/chunkSize;
+                var chunkZoomImg=basicZoom+Math.log2(chunkCountImg);//下载图的块的缩放大小
+                readyStatus.generationInProgress.setd("img",true);
+                readyStatus.imglist={};
+                document.imgData=[];
+                for(let i=0;i<imgResolution;i++){
+                    document.imgData[i]=[];
+                    for(let j=0;j<imgResolution;j++){
+                        document.imgData[i][j]=[];
+                    }
+                }
+                canvasFunction.loadLoadingPic(imgResolution)
+                for(let i=0;i<chunkCountImg;i++){
+                    for(let j=0;j<chunkCountImg;j++){
+                        readyStatus.imglist[`${x*chunkCount+i}_${y*chunkCount+j}_${chunkZoom}`]=false;
+                        loadImageData(chunkZoomImg,x*chunkCountImg+i,y*chunkCountImg+j,i,j)
+                    }
+                }
+                }
+                
+            /*
+            bug:
+            1.16个分地形块位置完全重合，要设置delta
+            2.贴图映射vt需要相应修改
+            
+            */
+            }else{
+                alert("发生错误。缩放大小+log2(分辨率/"+chunkSize+")超过14m ")
+            }
+            
+        }
+        document.getData=getData;
+        // getData(12,251,1799,downloadSettings.resolution,downloadSettings.imgResolution)
+        // getData(8,214,105,256,256)
+        //api-key:qA1ZmmF8Qc2muxHAYt5LIg
+        //https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/0/0/0
+        //https://api.mapbox.com/v4/mapbox.satellite/8/214/105.webp?sku=101ryq85xzhEg&access_token=pk.eyJ1IjoiY3licml3c2t5IiwiYSI6ImNsNnkxaGQxYjAweWozaW5xaXRpdjZzZGwifQ.IKEXnPBzxaudRLZmwM-v2w
+
+    </script>
+    <!-- <iframe src="https://tile.nextzen.org/tilezen/terrain/v1/256/terrarium/2/3/2.png" frameborder="0"onload="load()"></iframe> -->
+</body>
+
+</html>
