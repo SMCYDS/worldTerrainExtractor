@@ -1,0 +1,16 @@
+# 依赖
+node_modules/
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 本地环境
+.env
+.env.local
